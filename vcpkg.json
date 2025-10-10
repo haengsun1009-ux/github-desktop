@@ -1,0 +1,8 @@
+{
+  "name": "libtorrent-downloader",
+  "version-string": "0.1.0",
+  "builtin-baseline": "b1bb8baa6a460bb0343109797260a36e6983dec6",
+  "dependencies": [
+    { "name": "libtorrent", "default-features": false, "features": ["deprecated-functions"] }
+  ]
+}

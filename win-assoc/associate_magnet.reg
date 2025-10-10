@@ -1,0 +1,18 @@
+Windows Registry Editor Version 5.00
+
+; Associate magnet: protocol with our app
+[HKEY_CLASSES_ROOT\magnet]
+@="URL:Magnet Protocol"
+"URL Protocol"=""
+
+[HKEY_CLASSES_ROOT\magnet\DefaultIcon]
+@="%ProgramFiles%\\LibtorrentDownloader\\libtorrent_downloader.exe,0"
+
+[HKEY_CLASSES_ROOT\magnet\shell]
+@="open"
+
+[HKEY_CLASSES_ROOT\magnet\shell\open]
+@="Open with Libtorrent Downloader"
+
+[HKEY_CLASSES_ROOT\magnet\shell\open\command]
+@="\"%ProgramFiles%\\LibtorrentDownloader\\libtorrent_downloader.exe\" \"%1\""

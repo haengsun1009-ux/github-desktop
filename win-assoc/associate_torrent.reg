@@ -1,0 +1,20 @@
+Windows Registry Editor Version 5.00
+
+; Associate .torrent with our app
+[HKEY_CLASSES_ROOT\.torrent]
+@="TorrentFile"
+
+[HKEY_CLASSES_ROOT\TorrentFile]
+@="Torrent File"
+
+[HKEY_CLASSES_ROOT\TorrentFile\DefaultIcon]
+@="%ProgramFiles%\\LibtorrentDownloader\\libtorrent_downloader.exe,0"
+
+[HKEY_CLASSES_ROOT\TorrentFile\shell]
+@="open"
+
+[HKEY_CLASSES_ROOT\TorrentFile\shell\open]
+@="Open with Libtorrent Downloader"
+
+[HKEY_CLASSES_ROOT\TorrentFile\shell\open\command]
+@="\"%ProgramFiles%\\LibtorrentDownloader\\libtorrent_downloader.exe\" \"%1\""
