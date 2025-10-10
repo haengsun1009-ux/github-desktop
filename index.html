@@ -19,6 +19,11 @@
             min-height: 100vh;
         }
 
+        html {
+            /* 스무스 스크롤을 CSS로 처리 (JS 제거) */
+            scroll-behavior: smooth;
+        }
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -34,6 +39,17 @@
             width: 100%;
             top: 0;
             z-index: 1000;
+        }
+
+        /* 스크롤 시 헤더 스타일 전환 (JS로 class 토글) */
+        header.scrolled {
+            background: rgba(255, 255, 255, 0.95);
+            color: #24292e;
+        }
+
+        header.scrolled .logo,
+        header.scrolled .nav-links a {
+            color: #24292e;
         }
 
         nav {
@@ -114,6 +130,9 @@
             margin: 2rem 0;
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            /* 아래 콘텐츠는 화면에 보여질 때까지 레이아웃/페인트를 지연하여 초기 로드 최적화 */
+            content-visibility: auto; /* 크롬/엣지/사파리 지원 */
+            contain-intrinsic-size: 1000px; /* 예상 높이 확보로 CLS 방지 */
         }
 
         .features h2 {
@@ -135,6 +154,9 @@
             border-radius: 12px;
             background: #f8f9fa;
             transition: transform 0.3s ease;
+            /* 카드 단위로도 지연 렌더링 적용 */
+            content-visibility: auto;
+            contain-intrinsic-size: 280px; /* 카드 대략 높이 */
         }
 
         .feature-card:hover {
@@ -191,8 +213,30 @@
             }
         }
 
+        /* JS에서 class 토글만으로 동작하도록 전환 (레이아웃 처리 최소화) */
         .fade-in {
-            animation: fadeInUp 0.8s ease-out;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+            will-change: opacity, transform;
+        }
+
+        .fade-in.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 사용자 접근성: 모션 최소화 선호 시 애니메이션 제거 */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation: none !important;
+                transition: none !important;
+            }
+            html { scroll-behavior: auto; }
+            .fade-in {
+                opacity: 1 !important;
+                transform: none !important;
+            }
         }
     </style>
 </head>
@@ -211,6 +255,8 @@
 
     <!-- 메인 콘텐츠 -->
     <main class="container">
+        <!-- 스크롤 상태 감지를 위한 센티널 (헤더 클래스 토글용) -->
+        <div id="scroll-sentinel" aria-hidden="true"></div>
         <!-- 히어로 섹션 -->
         <section class="hero fade-in">
             <h1>Git을 더 쉽게, 더 직관적으로</h1>
@@ -268,17 +314,18 @@
     </footer>
 
     <script>
-        // 스크롤 애니메이션 효과
+        // 스크롤 애니메이션 효과 (IntersectionObserver로 클래스만 토글)
         const observerOptions = {
             threshold: 0.1,
             rootMargin: '0px 0px -50px 0px'
         };
 
-        const observer = new IntersectionObserver((entries) => {
+        const fadeObserver = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
-                    entry.target.style.opacity = '1';
-                    entry.target.style.transform = 'translateY(0)';
+                    entry.target.classList.add('is-visible');
+                    // 한 번 보이면 관찰 해제하여 비용 절약
+                    fadeObserver.unobserve(entry.target);
                 }
             });
         }, observerOptions);
@@ -286,47 +333,35 @@
         // 페이지 로드 후 애니메이션 적용
         document.addEventListener('DOMContentLoaded', () => {
             const fadeElements = document.querySelectorAll('.fade-in');
-            fadeElements.forEach(el => {
-                el.style.opacity = '0';
-                el.style.transform = 'translateY(30px)';
-                el.style.transition = 'opacity 0.8s ease-out, transform 0.8s ease-out';
-                observer.observe(el);
-            });
+            fadeElements.forEach(el => fadeObserver.observe(el));
 
-            // 부드러운 스크롤 효과
-            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-                anchor.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    const target = document.querySelector(this.getAttribute('href'));
-                    if (target) {
-                        target.scrollIntoView({
-                            behavior: 'smooth',
-                            block: 'start'
-                        });
-                    }
-                });
-            });
+            // 헤더 스크롤 상태를 IntersectionObserver로 관리
+            const header = document.querySelector('header');
+            const sentinel = document.getElementById('scroll-sentinel');
+            if (header && sentinel) {
+                const headerObserver = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            header.classList.remove('scrolled');
+                        } else {
+                            header.classList.add('scrolled');
+                        }
+                    });
+                }, { root: null, threshold: 0, rootMargin: '-100px 0px 0px 0px' });
+
+                headerObserver.observe(sentinel);
+            }
 
             // 다운로드 버튼 클릭 이벤트 (실제 다운로드 링크로 연결 가능)
             const downloadButton = document.querySelector('.download-button');
-            downloadButton.addEventListener('click', (e) => {
-                // 실제 GitHub Desktop 다운로드 페이지로 리다이렉트
-                // window.location.href = 'https://desktop.github.com/';
-                
-                // 현재는 알림만 표시
-                alert('GitHub Desktop 다운로드 페이지로 이동합니다!');
-            });
-        });
+            if (downloadButton) {
+                downloadButton.addEventListener('click', () => {
+                    // 실제 GitHub Desktop 다운로드 페이지로 리다이렉트
+                    // window.location.href = 'https://desktop.github.com/';
 
-        // 헤더 스크롤 효과
-        window.addEventListener('scroll', () => {
-            const header = document.querySelector('header');
-            if (window.scrollY > 100) {
-                header.style.background = 'rgba(255, 255, 255, 0.95)';
-                header.style.color = '#24292e';
-            } else {
-                header.style.background = 'rgba(255, 255, 255, 0.1)';
-                header.style.color = 'white';
+                    // 현재는 알림만 표시
+                    alert('GitHub Desktop 다운로드 페이지로 이동합니다!');
+                });
             }
         });
     </script>
