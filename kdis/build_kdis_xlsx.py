@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import kdis_builder  # noqa: E402
 
 OUT_DIR = os.path.dirname(os.path.abspath(__file__))
-DATASETS = ["kdis_guasha_data"]
+DATASETS = ["kdis_guasha_data", "kdis_showertowel_data"]
 
 
 def main(names):
