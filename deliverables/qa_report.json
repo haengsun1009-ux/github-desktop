@@ -1,0 +1,23 @@
+{
+  "summary": {
+    "top": 73,
+    "confirmed": 67,
+    "partial": 6,
+    "tier1_rate": 91.8,
+    "vendor": 17,
+    "intel": 114
+  },
+  "qa": {
+    "1_target_80pct": "FAIL 73/1000 (7.3%) — best-effort batch1",
+    "2_dedupe": "PASS",
+    "3_entity_top": "PASS 100% G1",
+    "4_tier1": "PASS 91.8%",
+    "5_source": "PASS 100%",
+    "6_hallucination": "PASS — 미확인은 확인 불가, 추정 연락처 없음",
+    "7_pipeline_parity": "PASS 01=02=05=73; Summary확보=73",
+    "8_partial_include": "PASS conf=67 part=6",
+    "9_collect_reflect": "PASS 03=114 advanced from search logs",
+    "10_formula_audit": "PASS formulas=438 bad_refs=0; SUM/IF/VLOOKUP structure verified",
+    "quality_gate": "FAIL (buyer count <80% of 1000) — other gates PASS; honest best-effort"
+  }
+}
