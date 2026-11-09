@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>클로드 무료 AI 자동셋팅</title>
+  <style>
+    :root { color-scheme: light; --ink:#1c1917; --muted:#57534e; --line:#e7e5e4; --bg:#fafaf9; --card:#fff; --accent:#0f766e; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:"Segoe UI", sans-serif; color:var(--ink); background:var(--bg); line-height:1.65; }
+    main { max-width:880px; margin:0 auto; padding:40px 20px 72px; }
+    h1 { font-size:1.8rem; margin:0 0 8px; }
+    h2 { font-size:1.25rem; margin:2rem 0 .6rem; border-top:1px solid var(--line); padding-top:1.2rem; }
+    h3 { font-size:1.05rem; margin:1.2rem 0 .4rem; }
+    p, li { font-size:1rem; }
+    .meta { color:var(--muted); margin:0 0 1.2rem; }
+    .note, .ok, .warn { border-radius:10px; padding:12px 14px; margin:14px 0; }
+    .note { background:#f5f5f4; }
+    .ok { background:#ecfdf5; }
+    .warn { background:#fff7ed; }
+    code, pre { font-family:Consolas, "Cascadia Mono", monospace; }
+    code { background:#f5f5f4; padding:.1em .35em; border-radius:4px; }
+    pre { background:#1c1917; color:#fafaf9; padding:14px 16px; border-radius:10px; overflow:auto; }
+    table { width:100%; border-collapse:collapse; background:var(--card); }
+    th, td { border:1px solid var(--line); padding:8px 10px; text-align:left; vertical-align:top; }
+    th { background:#f5f5f4; }
+    a { color:var(--accent); }
+  </style>
+</head>
+<body>
+<main>
+  <h1>클로드 무료 AI 자동셋팅</h1>
+  <p class="meta">Claude Code 2.1.227을 OpenRouter 무료 모델로 연결하는 절차. 작성일 2026-11-09 (한국 시간). API 키 값은 이 문서에 없다.</p>
+
+  <div class="warn">
+    PC의 <code>D:\ai\AI 셋팅\free AI 방법</code> 은 이 작업 환경에 없다.
+    이 파일을 그 폴더에 <code>클로드 무료 AI 자동셋팅.html</code> 로 복사한다.
+    <code>settings.json</code> 은 커밋하지 않는다. 그 파일에 키가 들어간다.
+  </div>
+
+  <h2>1. 무엇을 연결하는가</h2>
+  <p>Claude Code 프로그램을 OpenRouter로 보낸다. 답변 모델은 Sonnet 5.5가 아니라 OpenRouter 무료 모델이다. 키 모음 파일에서 이 설정에 쓰는 값은 OpenRouter 무료 키 한 줄뿐이다. Anthropic 키(<code>sk-ant-</code>)는 그 파일에 없다.</p>
+  <p>키 파일에 함께 있는 OpenAI, Gemini, Grok, NVIDIA, Ollama, OpenCode Zen, Context7 키는 Claude Code의 <code>/model</code> 목록에 줄을 추가하지 않는다. 이 세션의 요청은 <code>https://openrouter.ai/api</code> 로만 간다. Context7 키는 문서 검색용이다.</p>
+  <p>OpenRouter 무료 키는 호출 확인을 통과했다. 계정은 무료 티어이고, <code>openrouter/free</code> 시험 요청은 HTTP 200으로 <code>nvidia/nemotron-3.5-super-vl:free</code> 에 라우팅되었다.</p>
+
+  <h2>2. 자동 설정</h2>
+  <p>Claude Code는 프로젝트 <code>.env</code> 를 읽지 않는다. 사용자 설정 파일 <code>%USERPROFILE%\.claude\settings.json</code> 의 <code>env</code> 에 넣는다. 이 PC 경로는 <code>C:\Users\USER\.claude\settings.json</code> 이다.</p>
+  <p>공식 연결 규칙은 다음이다.</p>
+  <ul>
+    <li><code>ANTHROPIC_BASE_URL</code> = <code>https://openrouter.ai/api</code></li>
+    <li>OpenRouter 키는 <code>ANTHROPIC_AUTH_TOKEN</code> 에 넣는다.</li>
+    <li><code>ANTHROPIC_API_KEY</code> 는 빈 문자열로 둔다. 값이 있으면 Claude 계정 인증과 겹친다.</li>
+  </ul>
+  <p>PowerShell에서 첫 줄의 경로만 키 파일 위치로 바꾼 뒤 실행한다. 키 값은 화면에 나오지 않는다.</p>
+  <pre>$keyFile = "$env:USERPROFILE\Downloads\Context7 Secret Key.txt"
+$raw = Get-Content -Raw -Encoding UTF8 $keyFile
+if ($raw -notmatch 'sk-or-v1-[A-Za-z0-9]+') { throw "OpenRouter key not found in $keyFile" }
+$key = $Matches[0]
+
+$dir = Join-Path $env:USERPROFILE ".claude"
+$path = Join-Path $dir "settings.json"
+if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir | Out-Null }
+$settings = if (Test-Path $path) { Get-Content -Raw -Encoding UTF8 $path | ConvertFrom-Json } else { [pscustomobject]@{} }
+if (-not $settings.env) { $settings | Add-Member -NotePropertyName env -NotePropertyValue ([pscustomobject]@{}) -Force }
+function Set-EnvValue($obj, $name, $value) {
+  if ($obj.PSObject.Properties.Name -contains $name) { $obj.$name = $value }
+  else { $obj | Add-Member -NotePropertyName $name -NotePropertyValue $value }
+}
+Set-EnvValue $settings.env "ANTHROPIC_BASE_URL" "https://openrouter.ai/api"
+Set-EnvValue $settings.env "ANTHROPIC_AUTH_TOKEN" $key
+Set-EnvValue $settings.env "ANTHROPIC_API_KEY" ""
+Set-EnvValue $settings.env "ANTHROPIC_MODEL" "openrouter/free"
+Set-EnvValue $settings.env "ANTHROPIC_DEFAULT_SONNET_MODEL" "google/gemma-4-31b-it:free"
+Set-EnvValue $settings.env "ANTHROPIC_DEFAULT_HAIKU_MODEL" "nvidia/nemotron-3.5-lightning:free"
+Set-EnvValue $settings.env "ANTHROPIC_DEFAULT_OPUS_MODEL" "nvidia/nemotron-3-ultra-550b-a55b:free"
+Set-EnvValue $settings.env "ANTHROPIC_DEFAULT_FABLE_MODEL" "nvidia/nemotron-3.5-super-vl:free"
+Set-EnvValue $settings.env "ANTHROPIC_CUSTOM_MODEL_OPTION" "openrouter/free"
+Set-EnvValue $settings.env "ANTHROPIC_CUSTOM_MODEL_OPTION_NAME" "OpenRouter Free"
+Set-EnvValue $settings.env "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY" "0"
+$settings | ConvertTo-Json -Depth 20 | Set-Content -Encoding utf8 $path
+
+$check = Get-Content -Raw -Encoding UTF8 $path | ConvertFrom-Json
+"FILE=" + $path
+"BASE=" + $check.env.ANTHROPIC_BASE_URL
+"MODEL=" + $check.env.ANTHROPIC_MODEL
+"TOKEN_SET=" + [bool]$check.env.ANTHROPIC_AUTH_TOKEN
+"API_KEY_EMPTY=" + ($check.env.ANTHROPIC_API_KEY -eq "")</pre>
+  <div class="ok">
+    정상 출력은 <code>BASE=https://openrouter.ai/api</code>, <code>MODEL=openrouter/free</code>, <code>TOKEN_SET=True</code>, <code>API_KEY_EMPTY=True</code> 다.
+    PowerShell의 <code>$env:ANTHROPIC_API_KEY</code> 가 비어 <code>KEY_SET=False</code> 로 보여도, 키는 <code>ANTHROPIC_AUTH_TOKEN</code> 에 있으면 된다.
+  </div>
+
+  <h2>3. 설정이 되었는지 확인</h2>
+  <p><code>/status</code> 는 Claude 웹 채팅이나 앱 대화창에서 동작하지 않는다. PowerShell에서 Claude Code 터미널을 연 다음에만 동작한다.</p>
+  <pre>claude</pre>
+  <p>화면이 터미널 전체 화면으로 바뀌고 아래에 입력줄이 생기면 <code>/status</code> 를 입력한다. 연결된 세션은 이렇게 나온다. 이 PC에서 실제로 확인된 값이다.</p>
+  <pre>Version:             2.1.227
+Auth token:          ANTHROPIC_AUTH_TOKEN
+Anthropic base URL:  https://openrouter.ai/api
+Model:               gemma4:e4b
+Setting sources:     User settings</pre>
+  <p><code>Auth token</code> 과 <code>Anthropic base URL</code> 두 줄이 맞으면 OpenRouter 연결은 된 것이다. <code>Setting sources: User settings</code> 는 <code>settings.json</code> 에서 읽혔다는 뜻이다.</p>
+  <p>예전에 Claude 계정으로 로그인했다면, Claude Code 안에서 <code>/logout</code> 을 한 번 실행하고 프로그램을 완전히 끈 뒤 새 PowerShell에서 <code>claude</code> 를 다시 실행한다. <code>Auth token</code> 이 <code>ANTHROPIC_API_KEY</code> 로 나오거나 Login method에 Claude 계정이 보이면 무료 키가 아직 적용되지 않은 것이다.</p>
+  <p>파일만 보려면 PowerShell에서 다음을 실행한다. 키 값은 출력되지 않는다.</p>
+  <pre>$s = Get-Content "$env:USERPROFILE\.claude\settings.json" -Raw | ConvertFrom-Json
+"BASE=" + $s.env.ANTHROPIC_BASE_URL
+"MODEL=" + $s.env.ANTHROPIC_MODEL
+"TOKEN_SET=" + [bool]$s.env.ANTHROPIC_AUTH_TOKEN</pre>
+
+  <h2>4. gemma4:e4b 와 무료 모델</h2>
+  <p><code>/status</code> 의 모델 <code>gemma4:e4b</code> 는 OpenRouter의 Gemma 4다. 짧은 이름만으로는 무료 버전인지 구분되지 않는다. 가격이 0인 ID는 끝에 <code>:free</code> 가 붙는다.</p>
+  <table>
+    <thead><tr><th>모델 ID</th><th>용도</th></tr></thead>
+    <tbody>
+      <tr><td><code>openrouter/free</code></td><td>그때그때 무료 모델을 자동 선택</td></tr>
+      <tr><td><code>google/gemma-4-31b-it:free</code></td><td>Sonnet 자리에 넣을 일반 모델</td></tr>
+      <tr><td><code>google/gemma-4-26b-a4b-it:free</code></td><td>같은 계열의 무료 Gemma. <code>:free</code> 가 없으면 유료다</td></tr>
+      <tr><td><code>nvidia/nemotron-3.5-lightning:free</code></td><td>Haiku 자리에 넣을 빠른 모델</td></tr>
+      <tr><td><code>nvidia/nemotron-3-ultra-550b-a55b:free</code></td><td>Opus 자리에 넣을 큰 모델</td></tr>
+      <tr><td><code>nvidia/nemotron-3.5-super-vl:free</code></td><td>Fable 자리. 자동 라우터가 시험 호출에서 고른 모델</td></tr>
+    </tbody>
+  </table>
+  <p>유료 한도가 끝나도 Claude 구독 세션이 이 무료 모델로 자동 전환되지는 않는다. 무료로 이어가려면 이 설정으로 연 Claude Code 세션을 쓴다.</p>
+
+  <h2>5. /model 에 모델을 더 넣는 방법</h2>
+  <p>2.1.227에서 <code>/model</code> 에 <code>gemma4:e4b</code> 만 보이면, 게이트웨이가 고른 모델 하나만 표시된 것이다. 이 버전은 기본 모델 네 자리와 사용자 지정 모델 한 줄을 추가할 수 있다. 위 자동 설정 스크립트가 그 다섯 줄을 넣는다.</p>
+  <ul>
+    <li>Opus: <code>nvidia/nemotron-3-ultra-550b-a55b:free</code></li>
+    <li>Sonnet: <code>google/gemma-4-31b-it:free</code></li>
+    <li>Haiku: <code>nvidia/nemotron-3.5-lightning:free</code></li>
+    <li>Fable: <code>nvidia/nemotron-3.5-super-vl:free</code></li>
+    <li>OpenRouter Free: <code>openrouter/free</code></li>
+  </ul>
+  <p>스크립트를 실행한 뒤 Claude Code를 완전히 종료하고, 새 PowerShell에서 <code>claude</code> 를 다시 연 다음 <code>/model</code> 을 확인한다. 지금 세션 모델 <code>gemma4:e4b</code> 는 목록에 남을 수 있다.</p>
+  <p><code>modelPicker</code> 로 줄을 원하는 만큼 넣는 기능은 Claude Code <strong>2.1.242</strong> 부터다. 2.1.227에서는 그 설정이 적용되지 않는다. 줄을 더 늘리려면 먼저 버전을 올린다.</p>
+
+  <h2>6. 설정이 비어 있을 때</h2>
+  <p>다음처럼 나오면 <code>settings.json</code> 이 아직 없는 것이다. 2장의 스크립트를 실행한다.</p>
+  <pre>claude --version
+2.1.227 (Claude Code)
+BASE=
+MODEL=
+KEY_SET=False</pre>
+  <p><code>claude --version</code> 이 2.1.227을 출력하는 것은 프로그램 설치가 끝났다는 뜻이고, 무료 키 연결이 끝났다는 뜻은 아니다.</p>
+</main>
+</body>
+</html>
