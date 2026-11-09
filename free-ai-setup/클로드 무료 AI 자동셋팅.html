@@ -30,7 +30,7 @@
 <body>
 <main>
   <h1>클로드 무료 AI 자동셋팅</h1>
-  <p class="meta">Claude Code 2.1.227을 OpenRouter 무료 모델로 연결하는 절차. 작성일 2026-11-09 (한국 시간). API 키 값은 이 문서에 없다.</p>
+  <p class="meta">Claude Code를 OpenRouter 무료 모델로 연결하는 절차. 최신 버전은 2026-11-06 기준 2.1.319. 작성일 2026-11-09 (한국 시간). API 키 값은 이 문서에 없다.</p>
 
   <div class="warn">
     PC의 <code>D:\ai\AI 셋팅\free AI 방법</code> 은 이 작업 환경에 없다.
@@ -122,17 +122,36 @@ Setting sources:     User settings</pre>
   </table>
   <p>유료 한도가 끝나도 Claude 구독 세션이 이 무료 모델로 자동 전환되지는 않는다. 무료로 이어가려면 이 설정으로 연 Claude Code 세션을 쓴다.</p>
 
-  <h2>5. /model 에 모델을 더 넣는 방법</h2>
-  <p>2.1.227에서 <code>/model</code> 에 <code>gemma4:e4b</code> 만 보이면, 게이트웨이가 고른 모델 하나만 표시된 것이다. 이 버전은 기본 모델 네 자리와 사용자 지정 모델 한 줄을 추가할 수 있다. 위 자동 설정 스크립트가 그 다섯 줄을 넣는다.</p>
-  <ul>
-    <li>Opus: <code>nvidia/nemotron-3-ultra-550b-a55b:free</code></li>
-    <li>Sonnet: <code>google/gemma-4-31b-it:free</code></li>
-    <li>Haiku: <code>nvidia/nemotron-3.5-lightning:free</code></li>
-    <li>Fable: <code>nvidia/nemotron-3.5-super-vl:free</code></li>
-    <li>OpenRouter Free: <code>openrouter/free</code></li>
-  </ul>
-  <p>스크립트를 실행한 뒤 Claude Code를 완전히 종료하고, 새 PowerShell에서 <code>claude</code> 를 다시 연 다음 <code>/model</code> 을 확인한다. 지금 세션 모델 <code>gemma4:e4b</code> 는 목록에 남을 수 있다.</p>
-  <p><code>modelPicker</code> 로 줄을 원하는 만큼 넣는 기능은 Claude Code <strong>2.1.242</strong> 부터다. 2.1.227에서는 그 설정이 적용되지 않는다. 줄을 더 늘리려면 먼저 버전을 올린다.</p>
+  <h2>5. 최신 버전으로 올리고 /model 목록을 늘리기</h2>
+  <p>지금 설치된 버전은 2.1.227이다. 2026-11-06 기준 최신은 <strong>2.1.319</strong> 다. <code>/model</code> 에 무료 모델을 여러 줄로 넣는 <code>modelPicker</code> 는 2.1.242부터 동작하므로, 2.1.227에서는 목록이 <code>gemma4:e4b</code> 한 줄로 남을 수 있다.</p>
+  <p>Claude Code 창을 모두 닫고 PowerShell에서 업데이트한다.</p>
+  <pre>claude update
+claude --version</pre>
+  <p><code>claude update</code> 가 실패하면 네이티브 설치 명령으로 다시 받는다.</p>
+  <pre>irm https://claude.ai/install.ps1 | iex
+claude --version</pre>
+  <p>버전이 2.1.242 이상이면, 기존 OpenRouter 키는 유지한 채 모델 목록만 추가한다.</p>
+  <pre>$path = "$env:USERPROFILE\.claude\settings.json"
+$s = Get-Content -Raw -Encoding UTF8 $path | ConvertFrom-Json
+$models = @(
+  @{ model = "openrouter/free"; label = "OpenRouter Free"; description = "무료 모델 자동 선택" },
+  @{ model = "google/gemma-4-31b-it:free"; label = "Gemma 4 31B"; description = "무료" },
+  @{ model = "google/gemma-4-26b-a4b-it:free"; label = "Gemma 4 26B"; description = "무료" },
+  @{ model = "nvidia/nemotron-3-ultra-550b-a55b:free[1m]"; label = "Nemotron 3 Ultra"; description = "무료, 100만 컨텍스트" },
+  @{ model = "nvidia/nemotron-3.5-super-vl:free[1m]"; label = "Nemotron 3.5 Super"; description = "무료, 100만 컨텍스트" },
+  @{ model = "nvidia/nemotron-3.5-lightning:free[1m]"; label = "Nemotron 3.5 Lightning"; description = "무료, 빠름" },
+  @{ model = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"; label = "Nemotron 3 Nano"; description = "무료" },
+  @{ model = "cohere/north-mini-code:free"; label = "North Mini Code"; description = "무료, 코드" },
+  @{ model = "recursive/flint-v1.0:free"; label = "Flint"; description = "무료" },
+  @{ model = "xingchen-agi/xing4.0-29b-a4b:free"; label = "Xing 4.0"; description = "무료" },
+  @{ model = "dots-studio/dots-3-note-preview:free"; label = "Dots3 Note"; description = "무료" }
+)
+$options = foreach ($item in $models) { [pscustomobject]$item }
+$picker = [pscustomobject]@{ replaceBuiltInOptions = $true; options = $options }
+if ($s.PSObject.Properties.Name -contains "modelPicker") { $s.modelPicker = $picker }
+else { $s | Add-Member -NotePropertyName modelPicker -NotePropertyValue $picker }
+$s | ConvertTo-Json -Depth 20 | Set-Content -Encoding utf8 $path</pre>
+  <p>Claude Code를 완전히 종료한 뒤 새 PowerShell에서 <code>claude</code> 를 실행하고 <code>/model</code> 을 연다. 위 11개 무료 모델이 보여야 한다. <code>[1m]</code> 은 Claude Code에 컨텍스트가 100만 토큰임을 알리는 표시이고, OpenRouter는 그 표시를 떼고 같은 무료 모델로 보낸다. 끝에 <code>:free</code> 가 없는 모델은 이 목록에 넣지 않는다.</p>
 
   <h2>6. 설정이 비어 있을 때</h2>
   <p>다음처럼 나오면 <code>settings.json</code> 이 아직 없는 것이다. 2장의 스크립트를 실행한다.</p>
